@@ -32,17 +32,21 @@ public void Main(string args)
 {
 	string[] arguments = args.Split(' ');
 
+	if (arguments.Length != 3)
+	{
+		Echo("You forget to put an argument list: <From> <To> <LCD-Panel-Name>\n\rWhere:\n\rFrom - from which number of a material show it\n\rTo - before which material show it\n\rLCD-Panel-Name - where to put a message result");
+		return;
+	}
+
 	Dictionary<string, int> Items = GetAllItemsFromAllCargos();
 
-
-	int From = 0;
+	int From = int.Parse(arguments[0]);
 	int To = Items.Count;
 	int i = 0;
-
 	if (arguments.Length != 0 && int.Parse(arguments[1]) != 0)
 		To = int.Parse(arguments[1]);
 
-	IMyTextPanel LCD = GridTerminalSystem.GetBlockWithName("ContainerStatus") as IMyTextPanel;			
+	IMyTextPanel LCD = GridTerminalSystem.GetBlockWithName(arguments[2]) as IMyTextPanel;
 	LCD.WriteText("=== | Materials | ===\n\r");
 	foreach (var Item in Items)
 	{
