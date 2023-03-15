@@ -36,7 +36,11 @@ Dictionary<string, int> GetNeededCountOfItems(Dictionary<string, int> Items, Dic
 
 	foreach (var WantedItem in WantedItems)
 	{
-		int NeededCount = Math.Abs(Math.Max(Items.ContainsKey(WantedItem.Key) ? Items[WantedItem.Key] : 0, 0) - WantedItem.Value);
+		int NeededCount = Math.Max(Items.ContainsKey(WantedItem.Key) ? Items[WantedItem.Key] : 0, 0) - WantedItem.Value;
+		if (NeededCount > 0)
+			NeededCount = 0;
+		NeededCount = Math.Abs(NeededCount);
+
 		NeededCountOfItems.Add(WantedItem.Key, NeededCount);
 	}
 
@@ -67,15 +71,13 @@ void SubtructNeededCountOfItemsFromAssembler(Dictionary<string, int> Items)
 
 public void Main(string args)
 {
-	IMyTextPanel LCD = GridTerminalSystem.GetBlockWithName("LCD") as IMyTextPanel;
-	LCD.WriteText("");
-
 	Dictionary<string, int> Items = GetAllItemsFromAllCargos();
 	Dictionary<string, int> WantedItems = new Dictionary<string, int>();
 	WantedItems.Add("SteelPlate", 100);
 	Dictionary<string, int> NeededCountOfItems = GetNeededCountOfItems(Items, WantedItems);
+
 	SubtructNeededCountOfItemsFromAssembler(NeededCountOfItems);
-	
+
 	List<IMyAssembler> Assemblers = new List<IMyAssembler>();
 	GridTerminalSystem.GetBlocksOfType<IMyAssembler>(Assemblers);
 
@@ -87,7 +89,6 @@ public void Main(string args)
 
 	foreach (var NeededItem in NeededCountOfItems)
 	{
-		LCD.WriteText(NeededItem.Key + " " + NeededItem.Value + "\n\r", true);
 		MyDefinitionId Item = MyDefinitionId.Parse("MyObjectBuilder_BlueprintDefinition/" + NeededItem.Key);
 		Assemblers[AssemblerIndex].AddQueueItem(Item, (double)NeededItem.Value);
 	}
