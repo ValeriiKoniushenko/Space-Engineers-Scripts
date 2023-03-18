@@ -1,21 +1,85 @@
-public void Main(string args)
+class MyCanvas
 {
-	IMyTextPanel LCD = GridTerminalSystem.GetBlockWithName("HydrogenLCD") as IMyTextPanel;
+	private const int LCDWidth = 35;
+	private const int LCDHeight = 17;
+	private int HCurret = 1;
+	private List<IMyTextPanel> LCDs = new List<IMyTextPanel>();
 
-	List<IMyBatteryBlock> Batteries = new List<IMyBatteryBlock>();
-	if (Batteries == null)
-		return;
-
-	GridTerminalSystem.GetBlocksOfType<IMyBatteryBlock>(Batteries);
-
-	LCD.WriteText("======= | Batteries | ========\n\r");
-	double TotalCurrentStoredPower = 0;
-	for (int i = 0; i < Batteries.Count; ++i)
+	public void AddLCD(IMyTextPanel LCD)
 	{
-		int Ratio = (int)(Batteries[i].CurrentStoredPower / Batteries[i].MaxStoredPower * 100);
-		LCD.WriteText("Battery "+ "'" + Batteries[i].CustomName + "'" + " #" + i + ": " + (int)(Batteries[i].CurrentStoredPower) + "MW (" + Ratio + "%)\n\r", true);
-		TotalCurrentStoredPower += Batteries[i].CurrentStoredPower;
+		LCDs.Add(LCD);
 	}
 
-	LCD.WriteText("Total: " + (int)(TotalCurrentStoredPower) + "MW \n\r", true);
+	public void WriteLine(string Text)
+	{
+		int Index = HCurret / LCDHeight;
+		if (Index < LCDs.Count)
+		{
+			LCDs[Index].WriteText(Text + "\n\r", true);
+			++HCurret;
+		}
+	}
+	public void Write(string Text)
+	{
+		int Index = HCurret / LCDHeight;
+		if (Index < LCDs.Count)
+		{
+			LCDs[Index].WriteText(Text, true);
+		}
+	}
+
+	public void Clear()
+	{
+		foreach (var LCD in LCDs)
+		{
+			LCD.WriteText("");
+		}
+		HCurret = 1;
+	}
+
+	public void MakeProgressBar(double Load)
+	{
+		Write("[ ");
+		double Width = LCDWidth * 2.43;
+		for(double i = 1.0; i <= Width; ++i)
+		{
+			Write(i / Width >= Load ? "'" : "|");
+		}
+		Write(" ]");
+		WriteLine("");
+	}
+}
+
+public void Main(string args)
+{
+	string[] arguments = args.Trim().Split(' ');
+	var Canvas = new MyCanvas();
+
+	if (arguments.Length < 1)
+	{
+		Echo("You have to pass a name almost one LCD panel, or more to get some result");
+		return;
+	}
+
+	for (int i = 0; i < arguments.Length; ++i)
+	{
+		var LCD = GridTerminalSystem.GetBlockWithName(arguments[i]) as IMyTextPanel;
+		if (LCD == null)
+		{
+			Echo("Can't find a LCD panel with name: " + arguments[i]);
+			return;
+		}
+		Canvas.AddLCD(LCD);
+	}
+
+	Canvas.Clear();
+
+	var Battaries = new List<IMyBatteryBlock>();
+	GridTerminalSystem.GetBlocksOfType<IMyBatteryBlock>(Battaries);
+
+	foreach(var Battery in Battaries)
+	{
+		Canvas.WriteLine(Battery.CustomName + ": " + Battery.CurrentStoredPower.ToString("0.0") + "MW / " + Battery.MaxStoredPower.ToString("0.0") + "MW");
+		Canvas.MakeProgressBar(Battery.CurrentStoredPower / Battery.MaxStoredPower);
+	}
 }
